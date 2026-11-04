@@ -1,4 +1,5 @@
 # Fedora bootc + Niri: Un escritorio inmutable para hardware modesto
+![Vista previa de mi escritorio en Niri](NiriPreview-Desktop.png)
 Este repositorio documenta la construcción de un sistema operativo personalizado, inmutable y ultraligero, diseñado específicamente para un **HP 14-ck2xxx con Intel Celeron N4020 y 8 GB de RAM**.
 
 ## Filosofía del Proyecto
