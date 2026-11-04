@@ -28,7 +28,7 @@ To replicate this system, follow these steps:
 3. Build the image:
 ```bash
 sudo podman build -t localhost/mi-niri-custom:latest .
-    ```
+```
 4. Apply changes using `sudo bootc upgrade`.
 5. Reboot the system.
 
@@ -74,7 +74,7 @@ If an update breaks the system (e.g., the known Niri and kmscon conflict in Fedo
 3. If in TTY, run the rollback command:
 ```bash
 sudo bootc rollback
-    ```
+```
 4. Finally, reboot the system:
 ```bash
 sudo reboot
