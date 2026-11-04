@@ -1,62 +1,85 @@
-# Fedora bootc + Niri: Un escritorio inmutable para hardware modesto
+# Fedora bootc + Niri: An Immutable Desktop for Modest Hardware
 
-![Vista previa de mi escritorio en Niri](NiriPreview-Desktop.png)
+*[Leer en Español](README.es.md)*
 
-Este repositorio documenta la construcción de un sistema operativo personalizado, inmutable y ultraligero, diseñado específicamente para un **HP 14-ck2xxx con Intel Celeron N4020 y 8 GB de RAM**.
+![My Niri Desktop Preview](NiriPreview-Desktop.png)
 
-## Filosofía del Proyecto
-El objetivo era abandonar los escritorios tradicionales pesados y crear un entorno **a prueba de fallos** (gracias a `bootc` y OSTree) que aproveche al máximo un hardware limitado, priorizando la eficiencia energética, la seguridad y la velocidad.
+This repository documents the construction of a personalized, immutable, and ultralight operating system, specifically designed for an **HP 14-ck2xxx with an Intel Celeron N4020 and 8 GB of RAM**.
 
-## Arquitectura del Sistema
-- **Base:** Fedora `bootc` (Imagen OCI inmutable).
-- **Compositor:** Niri (Wayland, tiling, scroll infinito).
-- **Shell:** Noctalia (Barra de estado ultraligera).
+## Project Philosophy
+
+The goal was to move away from heavy traditional desktop environments and create a **fault-tolerant** environment (thanks to `bootc` and OSTree) that maximizes limited hardware, prioritizing energy efficiency, security, and speed.
+
+## System Architecture
+
+- **Base:** Fedora `bootc` (Immutable OCI Image).
+- **Compositor:** Niri (Wayland, tiling, infinite scroll).
+- **Shell:** Noctalia (Ultralight status bar).
 - **Terminal:** Kitty + Starship + Nushell/Bash.
-- **Red:** AdGuard Home en Podman + Proton VPN.
-- **Almacenamiento:** Fusión SSD (128GB) + HDD (1TB) mediante `bind mounts` y Systemd.
+- **Network:** AdGuard Home on Podman + Proton VPN.
+- **Storage:** SSD (128GB) + HDD (1TB) fusion via `bind mounts` and Systemd.
 
-## Despliegue (Build & Switch)
-Para replicar este sistema, sigue estos pasos:
-1. Clona este repositorio.
-2. Revisa el archivo `bootc/Containerfile` y ajusta los paquetes a tu hardware.
-3. Construye la imagen: `sudo podman build -t localhost/mi-niri-custom:latest .`
-4. Aplica los cambios: `sudo bootc upgrade`
-5. Reinicia el equipo.
+## Deployment (Build & Switch)
 
-## Características Técnicas Destacadas
-- **Montajes de HDD robustos:** Uso de `home-binds.service` con `RequiresMountsFor` para evitar conflictos si el HDD no está conectado al arrancar.
-- **Solución al conflicto de portales:** Configuración de `niri-portals.conf` para Flatpak y capturas de pantalla.
-- **Automatización:** Scripts en Bash para organizar descargas y gestionar la VPN.
+To replicate this system, follow these steps:
 
-## Known Issues (Problemas Conocidos)
+1. Clone this repository.
+2. Review the `bootc/Containerfile` and adjust packages to your hardware.
+3. Build the image:
+```bash
+sudo podman build -t localhost/mi-niri-custom:latest .
+    ```
+4. Apply changes using `sudo bootc upgrade`.
+5. Reboot the system.
 
-### Conflicto entre Niri y `kmscon` en Fedora 45
-**Fecha de reporte:** Noviembre 2026  
-**Estado:** Pendiente de solución en upstream (se mantiene Fedora 44 por estabilidad).
+## Technical Highlights
 
-Con la actualización a Fedora 45, se experimentó un fallo crítico al intentar iniciar Niri desde la TTY. El sistema arrojaba el error `Failed to open session: Function not implemented (os error 38)` y la pantalla quedaba bloqueada.
+- **Robust HDD mounts:** Use of `home-binds.service` with `RequiresMountsFor` to prevent conflicts if the HDD is not connected at boot.
+- **Portal conflict resolution:** Configuration of `niri-portals.conf` for Flatpak and screenshot support.
+- **Automation:** Bash scripts for organizing downloads and managing the VPN.
 
-**Causa:**
-Fedora 45 introdujo el uso por defecto de `kmscon` (una consola gráfica en espacio de usuario) en las TTYs. A diferencia de la consola tradicional (`fbcon`), `kmscon` toma control exclusivo del dispositivo DRM/KMS de la GPU. Esto impide que Niri (a través de `libseat`) pueda inicializar su backend gráfico, causando un *panic* del compositor.
+## ⚠️ Known Issues
 
-**Solución Aplicada (Rollback):**
-Dado que el sistema base es inmutable (`bootc`), se realizó un rollback exitoso a Fedora 44 utilizando:
+### Niri and `kmscon` Conflict on Fedora 45
+
+**Report Date:** November 2026  
+**Status:** Pending upstream fix (staying on Fedora 44 for stability).
+
+With the update to Fedora 45, a critical failure was experienced when attempting to start Niri from the TTY. The system threw the error `Failed to open session: Function not implemented (os error 38)` and the screen became unresponsive.
+
+**Cause:**
+Fedora 45 introduced the default use of `kmscon` (a userspace graphical console) on TTYs. Unlike the traditional console (`fbcon`), `kmscon` takes exclusive control of the GPU's DRM/KMS device. This prevents Niri (via `libseat`) from initializing its graphical backend, causing a compositor panic.
+
+**Applied Solution (Rollback):**
+Since the base system is immutable (`bootc`), a successful rollback to Fedora 44 was performed using:
+
 ```bash
 sudo bootc rollback
 ```
 
-### Posibles Workarounds (No probados en producción)
-Para quienes deseen probar Fedora 45, se sugiere desactivar kmscon y volver a la consola clásica (getty) añadiendo lo siguiente al Containerfile:
+### Possible Workarounds (Untested in production)
+
+For those wishing to test Fedora 45, it is suggested to disable `kmscon` and revert to the classic console (`getty`) by adding the following to the `Containerfile`:
+
 ```dockerfile
 RUN systemctl mask kmsconvt@tty1.service kmsconvt@tty2.service
 ```
 
-## Modo Pánico (Recovery)
-Si una actualización rompe el sistema (por ejemplo, el conflicto conocido entre Niri y `kmscon` en Fedora 45):
-1. Reinicia y mantén pulsado `Shift` o `Esc` para entrar a GRUB.
-2. Selecciona la entrada de **Fedora 44**.
-3. Si estás en la TTY, ejecuta `sudo bootc rollback`.
-4. Luego, ejecuta `sudo reboot`
+## Recovery Mode
 
-## Licencia
-Este proyecto está bajo la licencia MIT. Siéntete libre de hacer fork y adaptarlo a tu propio hardware.
+If an update breaks the system (e.g., the known Niri and kmscon conflict in Fedora 45):
+
+1. Reboot and hold Shift or Esc to enter GRUB.
+2. Select the Fedora 44 entry.
+3. If in TTY, run the rollback command:
+```bash
+sudo bootc rollback
+    ```
+4. Finally, reboot the system:
+```bash
+sudo reboot
+```
+
+## License
+
+This project is licensed under the MIT License. Feel free to fork and adapt it to your own hardware.
