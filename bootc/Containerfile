@@ -1,23 +1,24 @@
-FROM quay.io/fedora/fedora-bootc:45 AS copr-fetch
+FROM quay.io/fedora/fedora-bootc:44 AS copr-fetch
 
-# Habilitamos los COPRs
+# Habilitamos los COPRs que usas
 RUN dnf5 install -y 'dnf5-command(copr)' \
     && dnf5 copr enable -y miguelregueiro/elio
 
 # Descargamos los RPMs (y sus dependencias) a una carpeta local
+# NOTA: nwg-look ha sido eliminado temporalmente por un conflicto de dependencias en F45.
 RUN mkdir -p /rpms && dnf5 download --resolve --destdir /rpms elio
 
-# Imagen final de Fedora 45
-FROM quay.io/fedora/fedora-bootc:45
+# Imagen final de Fedora 44
+FROM quay.io/fedora/fedora-bootc:44
 
 # 1. Configuración del sistema y ZRAM
 RUN mkdir -p /etc/systemd /var/roothome \
     && printf "[zram0]\nzram-size = min(ram / 2, 4096)\ncompression-algorithm = zstd\n" > /etc/systemd/zram-generator.conf
 
-# 2. Habilitar RPM Fusion para Fedora 45
+# 2. Habilitar RPM Fusion para Fedora 4
 RUN dnf5 install -y \
-    https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-45.noarch.rpm \
-    https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-45.noarch.rpm
+    https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-44.noarch.rpm \
+    https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-44.noarch.rpm
 
 # 3. Instalación masiva de paquetes base
 RUN dnf5 install -y --skip-unavailable --nodocs \
@@ -40,7 +41,7 @@ RUN dnf5 install -y --skip-unavailable --nodocs \
     intel-media-driver libva-intel-driver libva-utils mesa-vulkan-drivers \
     && dnf5 clean all
 
-# 4. Instalar paquetes de COPR descargados
+# 4. Instalar paquetes de COPR descargados en el Stage 1
 COPY --from=copr-fetch /rpms /tmp/rpms
 RUN dnf5 install -y /tmp/rpms/*.rpm \
     && dnf5 clean all \
