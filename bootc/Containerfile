@@ -1,0 +1,50 @@
+FROM quay.io/fedora/fedora-bootc:45 AS copr-fetch
+
+# Habilitamos los COPRs
+RUN dnf5 install -y 'dnf5-command(copr)' \
+    && dnf5 copr enable -y miguelregueiro/elio
+
+# Descargamos los RPMs (y sus dependencias) a una carpeta local
+RUN mkdir -p /rpms && dnf5 download --resolve --destdir /rpms elio
+
+# Imagen final de Fedora 45
+FROM quay.io/fedora/fedora-bootc:45
+
+# 1. Configuración del sistema y ZRAM
+RUN mkdir -p /etc/systemd /var/roothome \
+    && printf "[zram0]\nzram-size = min(ram / 2, 4096)\ncompression-algorithm = zstd\n" > /etc/systemd/zram-generator.conf
+
+# 2. Habilitar RPM Fusion para Fedora 45
+RUN dnf5 install -y \
+    https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-45.noarch.rpm \
+    https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-45.noarch.rpm
+
+# 3. Instalación masiva de paquetes base
+RUN dnf5 install -y --skip-unavailable --nodocs \
+    --setopt=install_weak_deps=0 \
+    --setopt=max_parallel_downloads=10 \
+    niri noctalia \
+    kitty firefox fastfetch pciutils upower \
+    power-profiles-daemon NetworkManager-wifi glibc-langpack-es btop \
+    gamemode mangohud seahorse steam-devices flatpak \
+    xdg-desktop-portal-gnome udiskie swayidle swaylock mate-polkit \
+    pipewire-pulseaudio pavucontrol mpv imv zathura tlp android-tools \
+    git curl wget python3-pip python3-pyqt6 \
+    yt-dlp zram-generator-defaults ffmpeg \
+    ncdu cava plymouth plymouth-themes plymouth-theme-spinner \
+    jetbrains-mono-fonts-all papirus-icon-theme \
+    unzip p7zip p7zip-plugins ffmpegthumbnailer \
+    bluez bluez-tools \
+    qt6ct lxappearance \
+    google-noto-color-emoji-fonts google-noto-fonts-all \
+    intel-media-driver libva-intel-driver libva-utils mesa-vulkan-drivers \
+    && dnf5 clean all
+
+# 4. Instalar paquetes de COPR descargados
+COPY --from=copr-fetch /rpms /tmp/rpms
+RUN dnf5 install -y /tmp/rpms/*.rpm \
+    && dnf5 clean all \
+    && rm -rf /var/cache/dnf/* /var/cache/libdnf5/* /tmp/rpms/* /var/tmp/*
+
+# 5. Configurar el logo de arranque (Plymouth)
+RUN plymouth-set-default-theme -R bgrt

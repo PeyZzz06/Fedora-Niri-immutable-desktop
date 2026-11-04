@@ -1,0 +1,50 @@
+format = """
+[┌─](bold green)\
+$username\
+$hostname\
+[─](bold green)\
+$directory\
+$git_branch\
+$git_status\
+[─](bold green)\
+$time\
+$line_break\
+$character"""
+
+[username]
+show_always = true
+style_user = "bold green"
+format = "[$user]($style)"
+
+[hostname]
+ssh_only = false
+format = "[@$hostname](bold green)"
+
+[directory]
+style = "bold cyan"
+format = "[ $path]($style)"
+truncation_length = 2
+truncation_symbol = "…/"
+
+# Aquí está la magia para Fedora Atomic:
+[directory.substitutions]
+"/var/home/jairfed" = "~"
+"/home/jairfed" = "~"
+
+[git_branch]
+format = " [$branch](bold red)"
+style = "bold red"
+
+[git_status]
+format = "[$all_status$ahead_behind]($style)"
+style = "bold red"
+
+[time]
+disabled = false
+style = "dim white"
+format = "[ $time]($style)"
+time_format = "%H:%M:%S"
+
+[character]
+success_symbol = "[>](bold green)"
+error_symbol = "[>](bold red)"
